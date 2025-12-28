@@ -12,7 +12,7 @@ bot = telebot.TeleBot(TOKEN)
 
 # Запрещенные слова, ссылки и эмодзи
 BAD_WORDS = [
-    "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
+   "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
     "казино", "casino", "bet", "betting", "gamble",
     "онлайн работа", "работа онлайн", "удаленно", "кол центр",
@@ -113,9 +113,14 @@ def only_owner_can_add_bot(message):
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
     chat_id = message.chat.id
+
+    # 🔥 АНОНИМНЫЙ АДМИН ИЛИ СООБЩЕНИЕ ОТ КАНАЛА — ПОЛНЫЙ ИГНОР
+    if message.sender_chat is not None:
+        return
+
     user_id = message.from_user.id
 
-    # ❗ АДМИНОВ И ВЛАДЕЛЬЦА НЕ ТРОГАЕМ
+    # 🔥 ОБЫЧНЫЙ АДМИН И ВЛАДЕЛЕЦ — ПОЛНЫЙ ИГНОР
     if is_admin_or_owner(chat_id, user_id):
         return
 
@@ -166,4 +171,5 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
