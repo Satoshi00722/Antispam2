@@ -8,10 +8,10 @@ import os
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
 bot = telebot.TeleBot(TOKEN)
 
-# ID доверенного администратора (твой)
+# ID владельца бота (только он может активировать)
 OWNER_ID = 7447763153
 
-# Слова, ссылки и эмодзи для фильтра
+# Запрещенные слова, ссылки и эмодзи
 BAD_WORDS = [
     "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
@@ -24,20 +24,21 @@ BAD_WORDS = [
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
 EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
 
-# Хранение времени сообщений для антифлуда
+# Хранение сообщений для антифлуда
 user_messages = defaultdict(lambda: defaultdict(list))  # {chat_id: {user_id: [timestamps]}}
 
-# Список чатов, где бот активен
+# Список авторизованных чатов
 AUTHORIZED_CHATS = set()
 
 app = Flask(__name__)
 
 def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
+    """Удаляет сообщение, мутит пользователя и отправляет уведомление в чат"""
     try:
         # Удаляем сообщение
         bot.delete_message(chat_id, message.message_id)
         
-        # Мут на 7 дней
+        # Ограничение пользователя на 7 дней
         bot.restrict_chat_member(
             chat_id,
             user_id,
@@ -48,7 +49,7 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
             can_add_web_page_previews=False
         )
         
-        # Красивое уведомление (HTML)
+        # Красивое уведомление
         text = f"""
 <b>⚠️ Внимание!</b>
 
@@ -60,11 +61,10 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
 Для уточнения пришлите ваше обращение администратору для одобрения: <b>@SUPEVSE</b>
 """
         bot.send_message(chat_id, text, parse_mode="HTML")
-        
     except Exception as e:
         print("Ban error:", e)
 
-# Проверяем, кто добавил бота
+# Команда /start — активирует бота только владельцем
 @bot.message_handler(commands=['start'])
 def start(message):
     chat_id = message.chat.id
@@ -72,12 +72,13 @@ def start(message):
 
     if user_id != OWNER_ID:
         bot.send_message(chat_id, "❌ Этот бот может быть активирован только доверенным администратором.")
-        bot.leave_chat(chat_id)  # Выходим из группы
+        bot.leave_chat(chat_id)  # выходим из группы
         return
 
     AUTHORIZED_CHATS.add(chat_id)
     bot.send_message(chat_id, "✅ Бот активирован в этом чате!")
 
+# Основная проверка сообщений
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
     chat_id = message.chat.id
@@ -119,6 +120,7 @@ def check_message(message):
         ban_user(chat_id, user_id, message, reason="Спам эмодзи")
         return
 
+# Вебхук для Telegram
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     json_str = request.get_data().decode("utf-8")
@@ -133,4 +135,5 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
