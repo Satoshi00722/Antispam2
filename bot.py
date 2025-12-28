@@ -8,9 +8,6 @@ import os
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
 bot = telebot.TeleBot(TOKEN)
 
-# ID владельца бота (только он может активировать)
-OWNER_ID = 7447763153
-
 # Запрещенные слова, ссылки и эмодзи
 BAD_WORDS = [
     "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
@@ -26,9 +23,6 @@ EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNIC
 
 # Хранение сообщений для антифлуда
 user_messages = defaultdict(lambda: defaultdict(list))  # {chat_id: {user_id: [timestamps]}}
-
-# Список авторизованных чатов
-AUTHORIZED_CHATS = set()
 
 app = Flask(__name__)
 
@@ -64,28 +58,10 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
     except Exception as e:
         print("Ban error:", e)
 
-# Команда /start — активирует бота только владельцем
-@bot.message_handler(commands=['start'])
-def start(message):
-    chat_id = message.chat.id
-    user_id = message.from_user.id
-
-    if user_id != OWNER_ID:
-        bot.send_message(chat_id, "❌ Этот бот может быть активирован только доверенным администратором.")
-        bot.leave_chat(chat_id)  # выходим из группы
-        return
-
-    AUTHORIZED_CHATS.add(chat_id)
-    bot.send_message(chat_id, "✅ Бот активирован в этом чате!")
-
 # Основная проверка сообщений
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
     chat_id = message.chat.id
-
-    # Игнорируем все чаты, где бот не был активирован владельцем
-    if chat_id not in AUTHORIZED_CHATS:
-        return
 
     if not message.text:
         return
@@ -135,5 +111,3 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-
