@@ -8,6 +8,9 @@ import os
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
 bot = telebot.TeleBot(TOKEN)
 
+# ID доверенного администратора (твой)
+OWNER_ID = 7447763153
+
 # Слова, ссылки и эмодзи для фильтра
 BAD_WORDS = [
     "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
@@ -21,8 +24,11 @@ BAD_WORDS = [
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
 EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
 
-# Хранение времени сообщений для антифлуд
+# Хранение времени сообщений для антифлуда
 user_messages = defaultdict(lambda: defaultdict(list))  # {chat_id: {user_id: [timestamps]}}
+
+# Список чатов, где бот активен
+AUTHORIZED_CHATS = set()
 
 app = Flask(__name__)
 
@@ -31,7 +37,7 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
         # Удаляем сообщение
         bot.delete_message(chat_id, message.message_id)
         
-        # Мут на 7 дней (7*24*60*60 = 604800 секунд)
+        # Мут на 7 дней
         bot.restrict_chat_member(
             chat_id,
             user_id,
@@ -42,24 +48,49 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
             can_add_web_page_previews=False
         )
         
-        # Уведомление в чат
-        bot.send_message(
-            chat_id,
-            f"⚠️ Пользователь @{message.from_user.username or message.from_user.first_name} "
-            f"заблокирован на 7 дней.\nПричина: {reason}\n"
-            f"По вопросам рекламы пишите @SUPEVSE"
-        )
+        # Красивое уведомление (HTML)
+        text = f"""
+<b>⚠️ Внимание!</b>
+
+Пользователь: <b>@{message.from_user.username or message.from_user.first_name}</b>
+<b>заблокирован на 7 дней.</b>
+
+Причина: <i>{reason}</i>
+
+Для уточнения пришлите ваше обращение администратору для одобрения: <b>@SUPEVSE</b>
+"""
+        bot.send_message(chat_id, text, parse_mode="HTML")
+        
     except Exception as e:
         print("Ban error:", e)
 
+# Проверяем, кто добавил бота
+@bot.message_handler(commands=['start'])
+def start(message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+
+    if user_id != OWNER_ID:
+        bot.send_message(chat_id, "❌ Этот бот может быть активирован только доверенным администратором.")
+        bot.leave_chat(chat_id)  # Выходим из группы
+        return
+
+    AUTHORIZED_CHATS.add(chat_id)
+    bot.send_message(chat_id, "✅ Бот активирован в этом чате!")
+
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
+    chat_id = message.chat.id
+
+    # Игнорируем все чаты, где бот не был активирован владельцем
+    if chat_id not in AUTHORIZED_CHATS:
+        return
+
     if not message.text:
         return
 
     text = message.text.lower()
     user_id = message.from_user.id
-    chat_id = message.chat.id
     now = time.time()
 
     # АНТИФЛУД: не более 5 сообщений за 10 секунд
@@ -83,7 +114,7 @@ def check_message(message):
         ban_user(chat_id, user_id, message, reason="Ссылка/реклама")
         return
 
-    # Проверка на эмодзи (можно убрать, если не нужно)
+    # Проверка на эмодзи
     if EMOJI_PATTERN.search(text):
         ban_user(chat_id, user_id, message, reason="Спам эмодзи")
         return
