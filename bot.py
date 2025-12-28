@@ -6,6 +6,8 @@ from collections import defaultdict
 import os
 
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
+OWNER_ID = 7447763153  # <-- ТВОЙ ID
+
 bot = telebot.TeleBot(TOKEN)
 
 # Запрещенные слова, ссылки и эмодзи
@@ -61,17 +63,22 @@ LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
 EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
 
 # Хранение сообщений для антифлуда
-user_messages = defaultdict(lambda: defaultdict(list))  # {chat_id: {user_id: [timestamps]}}
+user_messages = defaultdict(lambda: defaultdict(list))
 
 app = Flask(__name__)
 
-def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
-    """Удаляет сообщение, мутит пользователя и отправляет уведомление в чат"""
+# ---------- ПРОВЕРКА АДМИНА / ВЛАДЕЛЬЦА ----------
+def is_admin_or_owner(chat_id, user_id):
     try:
-        # Удаляем сообщение
+        member = bot.get_chat_member(chat_id, user_id)
+        return member.status in ["administrator", "creator"]
+    except:
+        return False
+
+def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
+    try:
         bot.delete_message(chat_id, message.message_id)
-        
-        # Ограничение пользователя на 7 дней
+
         bot.restrict_chat_member(
             chat_id,
             user_id,
@@ -81,8 +88,7 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
             can_send_other_messages=False,
             can_add_web_page_previews=False
         )
-        
-        # Красивое уведомление
+
         text = f"""
 <b>⚠️ Внимание!</b>
 
@@ -95,45 +101,57 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
     except Exception as e:
         print("Ban error:", e)
 
-# Основная проверка сообщений
+# ---------- ТОЛЬКО ТЫ МОЖЕШЬ ДОБАВЛЯТЬ БОТА ----------
+@bot.message_handler(content_types=["new_chat_members"])
+def only_owner_can_add_bot(message):
+    for member in message.new_chat_members:
+        if member.id == bot.get_me().id:
+            if message.from_user.id != OWNER_ID:
+                bot.leave_chat(message.chat.id)
+
+# ---------- ОСНОВНАЯ ПРОВЕРКА СООБЩЕНИЙ ----------
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
     chat_id = message.chat.id
+    user_id = message.from_user.id
+
+    # ❗ АДМИНОВ И ВЛАДЕЛЬЦА НЕ ТРОГАЕМ
+    if is_admin_or_owner(chat_id, user_id):
+        return
 
     if not message.text:
         return
 
     text = message.text.lower()
-    user_id = message.from_user.id
     now = time.time()
 
-    # АНТИФЛУД: не более 5 сообщений за 10 секунд
+    # АНТИФЛУД
     user_messages[chat_id][user_id] = [
         t for t in user_messages[chat_id][user_id] if now - t < 10
     ]
     user_messages[chat_id][user_id].append(now)
 
     if len(user_messages[chat_id][user_id]) >= 5:
-        ban_user(chat_id, user_id, message, reason="Флуд")
+        ban_user(chat_id, user_id, message, "Флуд")
         return
 
-    # Проверка на запрещенные слова
+    # Запрещенные слова
     for word in BAD_WORDS:
         if word in text:
-            ban_user(chat_id, user_id, message, reason=f"Запрещенное слово: {word}")
+            ban_user(chat_id, user_id, message, f"Запрещенное слово: {word}")
             return
 
-    # Проверка на ссылки
+    # Ссылки
     if LINK_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, reason="Ссылка/реклама")
+        ban_user(chat_id, user_id, message, "Ссылка/реклама")
         return
 
-    # Проверка на эмодзи
+    # Эмодзи
     if EMOJI_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, reason="Спам эмодзи")
+        ban_user(chat_id, user_id, message, "Спам эмодзи")
         return
 
-# Вебхук для Telegram
+# ---------- WEBHOOK ----------
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     json_str = request.get_data().decode("utf-8")
@@ -148,3 +166,4 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
