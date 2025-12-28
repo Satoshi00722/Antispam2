@@ -6,13 +6,12 @@ from collections import defaultdict
 import os
 
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
-OWNER_ID = 7447763153  # <-- ТВОЙ ID
+OWNER_ID = 7447763153
 
 bot = telebot.TeleBot(TOKEN)
 
-# Запрещенные слова, ссылки и эмодзи
 BAD_WORDS = [
-   "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
+    "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
     "казино", "casino", "bet", "betting", "gamble",
     "онлайн работа", "работа онлайн", "удаленно", "кол центр",
@@ -62,20 +61,19 @@ BAD_WORDS = [
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
 EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
 
-# Хранение сообщений для антифлуда
 user_messages = defaultdict(lambda: defaultdict(list))
 
 app = Flask(__name__)
 
-# ---------- ПРОВЕРКА АДМИНА / ВЛАДЕЛЬЦА ----------
-def is_admin_or_owner(chat_id, user_id):
+# ---------- ПРОВЕРКА АДМИНА ----------
+def is_admin(chat_id, user_id):
     try:
         member = bot.get_chat_member(chat_id, user_id)
         return member.status in ["administrator", "creator"]
     except:
         return False
 
-def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
+def ban_user(chat_id, user_id, message, reason):
     try:
         bot.delete_message(chat_id, message.message_id)
 
@@ -83,45 +81,34 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
             chat_id,
             user_id,
             until_date=int(time.time()) + 604800,
-            can_send_messages=False,
-            can_send_media_messages=False,
-            can_send_other_messages=False,
-            can_add_web_page_previews=False
+            can_send_messages=False
         )
 
         text = f"""
 <b>⚠️ Внимание!</b>
 
-Пользователь: <b>@{message.from_user.username or message.from_user.first_name}</b>
-<b>заблокирован на 7 дней.</b>
+Пользователь <b>@{message.from_user.username or message.from_user.first_name}</b>
+<b>заблокирован на 7 дней</b>
 
-Для уточнения пришлите ваше обращение администратору для одобрения: <b>@SUPEVSE</b>
+Причина: <b>{reason}</b>
 """
         bot.send_message(chat_id, text, parse_mode="HTML")
     except Exception as e:
         print("Ban error:", e)
 
-# ---------- ТОЛЬКО ТЫ МОЖЕШЬ ДОБАВЛЯТЬ БОТА ----------
-@bot.message_handler(content_types=["new_chat_members"])
-def only_owner_can_add_bot(message):
-    for member in message.new_chat_members:
-        if member.id == bot.get_me().id:
-            if message.from_user.id != OWNER_ID:
-                bot.leave_chat(message.chat.id)
-
-# ---------- ОСНОВНАЯ ПРОВЕРКА СООБЩЕНИЙ ----------
+# ---------- ОСНОВНАЯ ЛОГИКА ----------
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
     chat_id = message.chat.id
 
-    # 🔥 АНОНИМНЫЙ АДМИН ИЛИ СООБЩЕНИЕ ОТ КАНАЛА — ПОЛНЫЙ ИГНОР
+    # ❌ Сообщение от канала / анонимного админа — ИГНОР
     if message.sender_chat is not None:
         return
 
     user_id = message.from_user.id
 
-    # 🔥 ОБЫЧНЫЙ АДМИН И ВЛАДЕЛЕЦ — ПОЛНЫЙ ИГНОР
-    if is_admin_or_owner(chat_id, user_id):
+    # ❌ Админ — ИГНОР
+    if is_admin(chat_id, user_id):
         return
 
     if not message.text:
@@ -140,18 +127,18 @@ def check_message(message):
         ban_user(chat_id, user_id, message, "Флуд")
         return
 
-    # Запрещенные слова
+    # ЗАПРЕЩЁННЫЕ СЛОВА
     for word in BAD_WORDS:
         if word in text:
-            ban_user(chat_id, user_id, message, f"Запрещенное слово: {word}")
+            ban_user(chat_id, user_id, message, "Запрещённые слова")
             return
 
-    # Ссылки
+    # ССЫЛКИ
     if LINK_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, "Ссылка/реклама")
+        ban_user(chat_id, user_id, message, "Ссылки / реклама")
         return
 
-    # Эмодзи
+    # ЭМОДЗИ
     if EMOJI_PATTERN.search(text):
         ban_user(chat_id, user_id, message, "Спам эмодзи")
         return
@@ -171,5 +158,6 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
