@@ -50,8 +50,6 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
 Пользователь: <b>@{message.from_user.username or message.from_user.first_name}</b>
 <b>заблокирован на 7 дней.</b>
 
-Причина: <i>{reason}</i>
-
 Для уточнения пришлите ваше обращение администратору для одобрения: <b>@SUPEVSE</b>
 """
         bot.send_message(chat_id, text, parse_mode="HTML")
