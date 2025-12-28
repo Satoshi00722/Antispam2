@@ -8,25 +8,47 @@ import os
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
 bot = telebot.TeleBot(TOKEN)
 
+# Слова, ссылки и эмодзи для фильтра
 BAD_WORDS = [
     "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
     "казино", "casino", "bet", "betting", "gamble",
     "онлайн работа", "работа онлайн", "удаленно", "кол центр",
     "call center", "work online", "easy money",
-    "бот", "spam", "реклама", "заработок","спам"
+    "бот", "spam", "реклама", "заработок", "спам"
 ]
 
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
 EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
-user_messages = defaultdict(list)
+
+# Хранение времени сообщений для антифлуд
+user_messages = defaultdict(lambda: defaultdict(list))  # {chat_id: {user_id: [timestamps]}}
 
 app = Flask(__name__)
 
-def ban_user(chat_id, user_id, message):
+def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
     try:
+        # Удаляем сообщение
         bot.delete_message(chat_id, message.message_id)
-        bot.ban_chat_member(chat_id, user_id)
+        
+        # Мут на 7 дней (7*24*60*60 = 604800 секунд)
+        bot.restrict_chat_member(
+            chat_id,
+            user_id,
+            until_date=int(time.time()) + 604800,
+            can_send_messages=False,
+            can_send_media_messages=False,
+            can_send_other_messages=False,
+            can_add_web_page_previews=False
+        )
+        
+        # Уведомление в чат
+        bot.send_message(
+            chat_id,
+            f"⚠️ Пользователь @{message.from_user.username or message.from_user.first_name} "
+            f"заблокирован на 7 дней.\nПричина: {reason}\n"
+            f"По вопросам рекламы пишите @SUPEVSE"
+        )
     except Exception as e:
         print("Ban error:", e)
 
@@ -40,24 +62,30 @@ def check_message(message):
     chat_id = message.chat.id
     now = time.time()
 
-    user_messages[user_id] = [t for t in user_messages[user_id] if now - t < 10]
-    user_messages[user_id].append(now)
+    # АНТИФЛУД: не более 5 сообщений за 10 секунд
+    user_messages[chat_id][user_id] = [
+        t for t in user_messages[chat_id][user_id] if now - t < 10
+    ]
+    user_messages[chat_id][user_id].append(now)
 
-    if len(user_messages[user_id]) >= 5:
-        ban_user(chat_id, user_id, message)
+    if len(user_messages[chat_id][user_id]) >= 5:
+        ban_user(chat_id, user_id, message, reason="Флуд")
         return
 
+    # Проверка на запрещенные слова
     for word in BAD_WORDS:
         if word in text:
-            ban_user(chat_id, user_id, message)
+            ban_user(chat_id, user_id, message, reason=f"Запрещенное слово: {word}")
             return
 
+    # Проверка на ссылки
     if LINK_PATTERN.search(text):
-        ban_user(chat_id, user_id, message)
+        ban_user(chat_id, user_id, message, reason="Ссылка/реклама")
         return
 
+    # Проверка на эмодзи (можно убрать, если не нужно)
     if EMOJI_PATTERN.search(text):
-        ban_user(chat_id, user_id, message)
+        ban_user(chat_id, user_id, message, reason="Спам эмодзи")
         return
 
 @app.route(f"/{TOKEN}", methods=["POST"])
@@ -74,3 +102,4 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
