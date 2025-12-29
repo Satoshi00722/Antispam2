@@ -4,16 +4,16 @@ import re
 import time
 from collections import defaultdict
 import os
-import threading  # стандартная библиотека
+import threading
 
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
 OWNER_ID = 7447763153
 
 bot = telebot.TeleBot(TOKEN)
 
-# Запрещенные слова
+# ================== ЗАПРЕЩЕННЫЕ СЛОВА ==================
 BAD_WORDS = [
-    "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
+     "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
     "казино", "casino", "bet", "betting", "gamble",
     "онлайн работа", "работа онлайн", "удаленно", "кол центр",
@@ -60,7 +60,7 @@ BAD_WORDS = [
      "міцний", "для вечірок", "товар", "речі", "цукерки",
     "піца", "кава", "іграшки", "їжа", "оплата",
 
-    "$", "₽", "€", "₴", "р", "p",
+    "$", "₽", "€", "₴", "р", "p","+380","+420","+7"
 
     # добавленные слова
     "собрать",
@@ -79,7 +79,18 @@ user_messages = defaultdict(lambda: defaultdict(list))
 
 app = Flask(__name__)
 
-# ---------- ПРОВЕРКА АДМИНА ----------
+# ================== УДАЛЕНИЕ С ЗАДЕРЖКОЙ ==================
+def delete_later(chat_id, message_id, delay=600):
+    def worker():
+        time.sleep(delay)
+        try:
+            bot.delete_message(chat_id, message_id)
+        except Exception as e:
+            print("Delete error:", e)
+
+    threading.Thread(target=worker, daemon=True).start()
+
+# ================== ПРОВЕРКА АДМИНА ==================
 def is_admin_or_owner(chat_id, user_id):
     try:
         member = bot.get_chat_member(chat_id, user_id)
@@ -87,11 +98,13 @@ def is_admin_or_owner(chat_id, user_id):
     except:
         return False
 
-# ---------- БАН ----------
-def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
+# ================== БАН ==================
+def ban_user(chat_id, user_id, message, reason="Спам"):
     try:
+        # удаляем сообщение пользователя
         bot.delete_message(chat_id, message.message_id)
 
+        # мут / бан
         bot.restrict_chat_member(
             chat_id,
             user_id,
@@ -105,51 +118,46 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
         text = f"""
 <b>⚠️ Внимание!</b>
 
-Пользователь: <b>@{message.from_user.username or message.from_user.first_name}</b>
+Пользователь <b>@{message.from_user.username or message.from_user.first_name}</b>
 <b>заблокирован на 7 дней.</b>
 
-Для уточнения напишите администратору: <b>@SUPEVSE</b>
+По вопросам рекламы обращайтесь к администратору: <b>@SUPEVSE</b>
 """
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
 
-        # ⏱ удаление сообщения бота через 10 минут
-        threading.Timer(
-            600,
-            lambda: bot.delete_message(chat_id, sent.message_id)
-        ).start()
+        # ✅ ГАРАНТИРОВАННО удаляем сообщение бота через 10 минут
+        delete_later(chat_id, sent.message_id, 600)
 
     except Exception as e:
         print("Ban error:", e)
 
-# ---------- ПРОВЕРКА СООБЩЕНИЙ ----------
-@bot.message_handler(func=lambda m: True)
+# ================== ПРОВЕРКА СООБЩЕНИЙ ==================
+@bot.message_handler(func=lambda m: True, content_types=[
+    "text", "photo", "video", "animation", "sticker", "document"
+])
 def check_message(message):
     chat_id = message.chat.id
 
-    # анонимный админ / канал
-    if message.sender_chat is not None:
+    if message.sender_chat:
         return
 
     user_id = message.from_user.id
 
-    # админ / владелец
     if is_admin_or_owner(chat_id, user_id):
         return
 
-    if not message.text:
-        return
-
-    text = message.text.lower()
     now = time.time()
+    text = (message.text or "").lower()
 
     # ❌ ПЕРЕСЛАННЫЕ СООБЩЕНИЯ
-    if (
-        message.forward_from
-        or message.forward_from_chat
-        or message.forward_sender_name
-    ):
+    if message.forward_from or message.forward_from_chat or message.forward_sender_name:
         ban_user(chat_id, user_id, message, "Пересланная реклама")
+        return
+
+    # ❌ ЛЮБЫЕ КАРТИНКИ / ВИДЕО / СТИКЕРЫ
+    if message.content_type != "text":
+        ban_user(chat_id, user_id, message, "Медиа / реклама")
         return
 
     # АНТИФЛУД
@@ -164,18 +172,18 @@ def check_message(message):
 
     # ❌ ТЕЛЕФОН
     if PHONE_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, "Реклама (контакты)")
+        ban_user(chat_id, user_id, message, "Контакты")
         return
 
     # ❌ ЗАПРЕЩЕННЫЕ СЛОВА
     for word in BAD_WORDS:
         if word in text:
-            ban_user(chat_id, user_id, message, "Реклама услуг")
+            ban_user(chat_id, user_id, message, "Реклама")
             return
 
     # ❌ ССЫЛКИ
     if LINK_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, "Ссылка/реклама")
+        ban_user(chat_id, user_id, message, "Ссылка")
         return
 
     # ❌ ЭМОДЗИ
@@ -183,7 +191,7 @@ def check_message(message):
         ban_user(chat_id, user_id, message, "Спам эмодзи")
         return
 
-# ---------- WEBHOOK ----------
+# ================== WEBHOOK ==================
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     json_str = request.get_data().decode("utf-8")
