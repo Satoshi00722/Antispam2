@@ -13,7 +13,7 @@ bot = telebot.TeleBot(TOKEN)
 
 # ================== ЗАПРЕЩЕННЫЕ СЛОВА ==================
 BAD_WORDS = [
-     "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
+   "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
     "казино", "casino", "bet", "betting", "gamble",
     "онлайн работа", "работа онлайн", "удаленно", "кол центр",
@@ -58,9 +58,9 @@ BAD_WORDS = [
     "профіль","ссилка в біо","телеграм канал","вікр","сігнал","напишіть в особисті","меню в профілі","швидка доставка",
     "цілодобово","надійно","без шахрайства","стелс упаковка","безпечно","дискретно","найкращі ціни","якість","чистий",
      "міцний", "для вечірок", "товар", "речі", "цукерки",
-    "піца", "кава", "іграшки", "їжа", "оплата",
+    "піца", "кава", "іграшки", "їжа", "оплата","+420","+380","+7"
 
-    "$", "₽", "€", "₴", "р", "p","+380","+420","+7"
+    "$", "₽", "€", "₴", "р", "p",
 
     # добавленные слова
     "собрать",
@@ -80,14 +80,13 @@ user_messages = defaultdict(lambda: defaultdict(list))
 app = Flask(__name__)
 
 # ================== УДАЛЕНИЕ С ЗАДЕРЖКОЙ ==================
-def delete_later(chat_id, message_id, delay=600):
+def delete_later(chat_id, message_id, delay=300):  # 300 секунд = 5 минут
     def worker():
         time.sleep(delay)
         try:
             bot.delete_message(chat_id, message_id)
         except Exception as e:
             print("Delete error:", e)
-
     threading.Thread(target=worker, daemon=True).start()
 
 # ================== ПРОВЕРКА АДМИНА ==================
@@ -126,8 +125,8 @@ def ban_user(chat_id, user_id, message, reason="Спам"):
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
 
-        # ✅ ГАРАНТИРОВАННО удаляем сообщение бота через 10 минут
-        delete_later(chat_id, sent.message_id, 600)
+        # ✅ Удаляем сообщение бота через 5 минут
+        delete_later(chat_id, sent.message_id, 300)
 
     except Exception as e:
         print("Ban error:", e)
@@ -206,4 +205,6 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
+
 
