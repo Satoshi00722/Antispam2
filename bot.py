@@ -4,15 +4,16 @@ import re
 import time
 from collections import defaultdict
 import os
+import threading  # стандартная библиотека
 
 TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
-OWNER_ID = 7447763153  # <-- ТВОЙ ID
+OWNER_ID = 7447763153
 
 bot = telebot.TeleBot(TOKEN)
 
-# Запрещенные слова, ссылки и эмодзи
+# Запрещенные слова
 BAD_WORDS = [
-  "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
+    "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
     "порно", "sex", "porn", "xxx", "onlyfans",
     "казино", "casino", "bet", "betting", "gamble",
     "онлайн работа", "работа онлайн", "удаленно", "кол центр",
@@ -71,14 +72,14 @@ BAD_WORDS = [
 ]
 
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
-EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
+PHONE_PATTERN = re.compile(r"\+?\d[\d\s\-]{7,}")
+EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑✂️]", re.UNICODE)
 
-# Хранение сообщений для антифлуда
 user_messages = defaultdict(lambda: defaultdict(list))
 
 app = Flask(__name__)
 
-# ---------- ПРОВЕРКА АДМИНА / ВЛАДЕЛЬЦА ----------
+# ---------- ПРОВЕРКА АДМИНА ----------
 def is_admin_or_owner(chat_id, user_id):
     try:
         member = bot.get_chat_member(chat_id, user_id)
@@ -86,6 +87,7 @@ def is_admin_or_owner(chat_id, user_id):
     except:
         return False
 
+# ---------- БАН ----------
 def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
     try:
         bot.delete_message(chat_id, message.message_id)
@@ -106,24 +108,32 @@ def ban_user(chat_id, user_id, message, reason="Спам/реклама"):
 Пользователь: <b>@{message.from_user.username or message.from_user.first_name}</b>
 <b>заблокирован на 7 дней.</b>
 
-Для уточнения пришлите ваше обращение администратору для одобрения: <b>@SUPEVSE</b>
+Для уточнения напишите администратору: <b>@SUPEVSE</b>
 """
-        bot.send_message(chat_id, text, parse_mode="HTML")
+
+        sent = bot.send_message(chat_id, text, parse_mode="HTML")
+
+        # ⏱ удаление сообщения бота через 10 минут
+        threading.Timer(
+            600,
+            lambda: bot.delete_message(chat_id, sent.message_id)
+        ).start()
+
     except Exception as e:
         print("Ban error:", e)
 
-# ---------- ОСНОВНАЯ ПРОВЕРКА СООБЩЕНИЙ ----------
+# ---------- ПРОВЕРКА СООБЩЕНИЙ ----------
 @bot.message_handler(func=lambda m: True)
 def check_message(message):
     chat_id = message.chat.id
 
-    # 🔥 АНОНИМНЫЙ АДМИН ИЛИ СООБЩЕНИЕ ОТ КАНАЛА — ПОЛНЫЙ ИГНОР
+    # анонимный админ / канал
     if message.sender_chat is not None:
         return
 
     user_id = message.from_user.id
 
-    # 🔥 ОБЫЧНЫЙ АДМИН И ВЛАДЕЛЕЦ — ПОЛНЫЙ ИГНОР
+    # админ / владелец
     if is_admin_or_owner(chat_id, user_id):
         return
 
@@ -132,6 +142,15 @@ def check_message(message):
 
     text = message.text.lower()
     now = time.time()
+
+    # ❌ ПЕРЕСЛАННЫЕ СООБЩЕНИЯ
+    if (
+        message.forward_from
+        or message.forward_from_chat
+        or message.forward_sender_name
+    ):
+        ban_user(chat_id, user_id, message, "Пересланная реклама")
+        return
 
     # АНТИФЛУД
     user_messages[chat_id][user_id] = [
@@ -143,18 +162,23 @@ def check_message(message):
         ban_user(chat_id, user_id, message, "Флуд")
         return
 
-    # Запрещенные слова
+    # ❌ ТЕЛЕФОН
+    if PHONE_PATTERN.search(text):
+        ban_user(chat_id, user_id, message, "Реклама (контакты)")
+        return
+
+    # ❌ ЗАПРЕЩЕННЫЕ СЛОВА
     for word in BAD_WORDS:
         if word in text:
-            ban_user(chat_id, user_id, message, f"Запрещенное слово: {word}")
+            ban_user(chat_id, user_id, message, "Реклама услуг")
             return
 
-    # Ссылки
+    # ❌ ССЫЛКИ
     if LINK_PATTERN.search(text):
         ban_user(chat_id, user_id, message, "Ссылка/реклама")
         return
 
-    # Эмодзи
+    # ❌ ЭМОДЗИ
     if EMOJI_PATTERN.search(text):
         ban_user(chat_id, user_id, message, "Спам эмодзи")
         return
@@ -174,3 +198,4 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
