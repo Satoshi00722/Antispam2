@@ -12,53 +12,47 @@ OWNER_ID = 7447763153
 bot = telebot.TeleBot(TOKEN)
 
 # ================== ЗАПРЕЩЕННЫЕ СЛОВА ==================
-BAD_WORDS = [
-   "нарк", "drug", "weed", "cocaine", "меф", "амф", "mdma",
-    "порно", "sex", "porn", "xxx", "onlyfans",
-    "казино", "casino", "bet", "betting", "gamble",
-    "онлайн работа", "работа онлайн", "удаленно", "кол центр",
-    "call center", "work online", "easy money",
-    "бот", "spam", "реклама", "заработок", "спам","weed","marijuana","cannabis","pot","ganja","herb","grass","bud","hash","hashish","hemp","kush","skunk",
-    "dope","green","trees","smoke","blunt","joint","spliff","reefer","doobie","mj","mary jane","420","thc","cbd",
-    "shatter","wax","oil","dab","rosin",
-    "травка","марихуана","конопля","бошка","шишки","гандж","ганжа","план","гашиш","гаш","шмаль","дурь","зелень",
-    "анаша","косяк","джойнт","блант","куш","скунс","мері джейн","тгк","кбд","масло","воск","даб",
-    "tráva","marihuana","konopí","hasiš","haš","ganja","weed","skunk","kush","thc","cbd","olej","vosk",
-    "pupeny","budky","joint","blunt",
-    "weed","marihuana","cannabis","gras","kraut","ganja","hasch","haschisch","shit","dope","bubatz","grünes",
-    "ott","piece","joint","blunt","tüte","spliff","thc","cbd","öl","wax","harz","kush","skunk",
-    "трава","марихуана","конопля","шишки","бошка","ганжа","гандж","план","гашиш","гаш","шмаль","дурь","зелень",
-    "анаша","косяк","кочка","джойнт","блант","куш","скунс","мэри джейн","тгк","кбд","масло","воск","даб","розин","coke","coca","cocaine","snow","blow","white","powder","line","rock","crack","freebase","amphetamine",
-    "speed","meth","methamphetamine","crystal","ice","glass","shards","tina","crank","fast","pervitin","pep",
-    "paste","bolivian","peruvian","yayo","nose candy","charlie",
-    "кокс","кокаїн","сніг","білий","порошок","лінія","крек","кристал","мєт","метамфетамін","амфетамін",
-    "фен","фенамін","швидкий","скід","скідуха","лід","скло","скотина","первітін","порох","паста","heroin","h","horse","smack","brown","black","tar","china white","gear","junk","opium","morphine",
-    "morph","oxy","oxycodone","oxys","fentanyl","fent","patch","codeine","lean","purple drank","sizzurp",
-    "tramadol","tramal",
-    "героїн","герыч","гера","гарик","кінь","конина","коричневий","чорний","мак","опій","морфій","оксі",
-    "оксиконтин","фентаніл","кодеїн","лін","пурпурний п'ян","lsd","acid","tabs","blotter","trips","microdots","dots","lucy","mushrooms","shrooms","magic mushrooms",
-    "psilocybin","boomers","dmt","dimitri","spirit molecule","2c-b","nexus","2c-i","mescaline","cactus",
-    "peyote","ketamine","k","special k","kitty","vitamin k","pcp","angel dust","salvia",
-    "лсд","кислота","марка","марки","папер","трип","мікродоти","гриби","грибочки","псилоцибін","дмт",
-    "кетамін","кета","кечка","спешл кей","феніциклід","пцп","сальвія","mdma","ecstasy","xtc","e","x","molly","pills","rolls","beans","mandy","candy","love drug","methylone",
-    "mephedrone","meow meow","4-mmc","bath salts","synthetic cathinones","spice","k2","jwh","synthetic cannabinoids","noids",
-    "мдма","екстазі","моллі","таблетки","качі","пігулки","менді","цукерки","мефедрон","мяу-мяу","4-ммц","соль",
-    "бат салтс","спайс","синтетика","джей-дабл-ю-ейч","синтетичні канабіноїди","xanax","alprazolam","benzodiazepines","benzos","bars","zannies","valium","diazepam","ativan","klonopin","rohypnol",
-    "roofies","ghb","liquid ecstasy","poppers","amyl nitrite","laughing gas","nitrous oxide","nangs","whippets","dxm",
-    "dextromethorphan","lean","promethazine","sprite","jolly rancher",
-    "ксанакс","алпразолам","бензодіазепіни","бензи","плитки","валіум","діазепам","рогіпнол","ггб","рідке екстазі",
-    "попперс","веселячий газ","закис азоту","дхм","декстрометорфан","buy","sell","deal","dealer","vendor","plug","connect","supplier","source","steerer","middleman","trapper","hustler",
-    "score","cop","pick up","re-up","stock","onion","dnm",
-    "high","stoned","baked","fried","wasted","gone","blasted","ripped","smacked","tripping","rolling","peaking",
-    "coming up","buzz","rush","nod","nodding off","euphoria","binge","chasing the dragon","bag","sack","g","gram","ounce","oz","pound","lb","kilo","key","brick","piece","dose","hit","stamp","ball","8-ball",
-    "wrap","parachute","baggie","scale","weight","pipe","bong","bubblier","vape","dab rig","needle","spike","syringe","point",
-    "foil","tinfoil","mirror","plate","straw","roll","grinder","crusher","roach","filter",
-    "check my profile","link in bio","telegram: @","wickr","signal","session","email for info","pm for details","dm me",
-    "contact for menu","menu available","fast delivery","24/7","reliable","trusted","no bs","no scam","verified",
-    "профіль","ссилка в біо","телеграм канал","вікр","сігнал","напишіть в особисті","меню в профілі","швидка доставка",
-    "цілодобово","надійно","без шахрайства","стелс упаковка","безпечно","дискретно","найкращі ціни","якість","чистий",
-     "міцний", "для вечірок", "товар", "речі", "цукерки",
-    "піца", "кава", "іграшки", "їжа", "оплата","+420","+380","+7"
+  BAD_WORDS = [
+    # 🔞 ПОРНО / СЕКС
+    "порно","porn","sex","xxx","onlyfans","escort","эскорт",
+    "проститутка","проституция","шлюха","девочки","массаж",
+    "cam","webcam","cams","nude","nudes","nsfw",
+    "hooker","brothel","strip","striptease",
+    "интим","интим услуги","sex service","vip girls",
+
+    # 💊 НАРКОТИКИ
+    "нарк","drug","drugs","weed","marijuana","cannabis","ganja","hash","hashish","hemp",
+    "kush","skunk","dope","420","thc","cbd",
+    "cocaine","coke","snow","crack","amphetamine","speed","meth","ice",
+    "mdma","ecstasy","xtc","molly","mephedrone","4-mmc",
+    "heroin","opium","morphine","fentanyl","tramadol",
+    "lsd","acid","dmt","ketamine","shrooms","psilocybin",
+    "spice","k2","noids",
+    "трава","марихуана","конопля","шишки","бошка","ганжа","гандж",
+    "меф","амф","фен","героин","гашиш","анаша","косяк",
+
+    # 💃 ПРОСТИТУЦИЯ / ЭСКОРТ
+    "индивидуалка","escort service","эскорт услуги",
+
+    # 💱 ОБМЕННИКИ / КРИПТА (СЕРЫЕ)
+    "обмен","обменник","exchange","crypto exchange",
+    "usdt","btc","bitcoin","ethereum",
+    "нал","кеш","cash","без верификации","no kyc",
+    "быстрый обмен","анонимно",
+
+    # 🎭 МОШЕННИКИ / СКАМ
+    "скам","scam","мошенник","мошенники","fraud",
+    "развод","обман","кидалово","фейк",
+    "гарант","без риска","100%","проверенный",
+    "no scam","trusted","verified","fast profit",
+
+    # 💸 БЫСТРЫЕ ДЕНЬГИ
+    "быстрые деньги","easy money","лёгкий заработок",
+    "заработок без вложений","работа онлайн",
+    "удаленно","call center","кол центр",
+    "инвестиции 100%","пассивный доход",
+    "деньги за день","профит","income",
+     "оплата","+420","+380","+7"
 
     "$", "₽", "€", "₴", "р", "p",
 
@@ -73,63 +67,50 @@ BAD_WORDS = [
 
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
 PHONE_PATTERN = re.compile(r"\+?\d[\d\s\-]{7,}")
-EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑✂️]", re.UNICODE)
+EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
 
 user_messages = defaultdict(lambda: defaultdict(list))
 
 app = Flask(__name__)
 
 # ================== УДАЛЕНИЕ С ЗАДЕРЖКОЙ ==================
-def delete_later(chat_id, message_id, delay=300):  # 300 секунд = 5 минут
+def delete_later(chat_id, message_id, delay=300):
     def worker():
         time.sleep(delay)
         try:
             bot.delete_message(chat_id, message_id)
-        except Exception as e:
-            print("Delete error:", e)
+        except:
+            pass
     threading.Thread(target=worker, daemon=True).start()
 
 # ================== ПРОВЕРКА АДМИНА ==================
-def is_admin_or_owner(chat_id, user_id):
+def is_admin(chat_id, user_id):
     try:
         member = bot.get_chat_member(chat_id, user_id)
         return member.status in ["administrator", "creator"]
     except:
         return False
 
-# ================== БАН ==================
-def ban_user(chat_id, user_id, message, reason="Спам"):
+# ================== ПРЕДУПРЕЖДЕНИЕ ==================
+def warn_user(chat_id, message, reason):
     try:
-        # удаляем сообщение пользователя
         bot.delete_message(chat_id, message.message_id)
 
-        # мут / бан
-        bot.restrict_chat_member(
-            chat_id,
-            user_id,
-            until_date=int(time.time()) + 604800,
-            can_send_messages=False,
-            can_send_media_messages=False,
-            can_send_other_messages=False,
-            can_add_web_page_previews=False
-        )
-
         text = f"""
-<b>⚠️ Внимание!</b>
+⚠️ <b>Предупреждение</b>
 
-Пользователь <b>@{message.from_user.username or message.from_user.first_name}</b>
-<b>заблокирован на 7 дней.</b>
+Сообщение от <b>@{message.from_user.username or message.from_user.first_name}</b>
+удалено.
 
-По вопросам рекламы обращайтесь к администратору: <b>@SUPEVSE</b>
+Повторные нарушения приведут к ограничениям🚫 
+Для уточнения пришлите ваше обращение администратору для одобрения: @SUPEVSE
 """
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
-
-        # ✅ Удаляем сообщение бота через 5 минут
         delete_later(chat_id, sent.message_id, 300)
 
     except Exception as e:
-        print("Ban error:", e)
+        print("Warn error:", e)
 
 # ================== ПРОВЕРКА СООБЩЕНИЙ ==================
 @bot.message_handler(func=lambda m: True, content_types=[
@@ -143,7 +124,7 @@ def check_message(message):
 
     user_id = message.from_user.id
 
-    if is_admin_or_owner(chat_id, user_id):
+    if is_admin(chat_id, user_id):
         return
 
     now = time.time()
@@ -151,12 +132,12 @@ def check_message(message):
 
     # ❌ ПЕРЕСЛАННЫЕ СООБЩЕНИЯ
     if message.forward_from or message.forward_from_chat or message.forward_sender_name:
-        ban_user(chat_id, user_id, message, "Пересланная реклама")
+        warn_user(chat_id, message, "Пересланные сообщения запрещены")
         return
 
-    # ❌ ЛЮБЫЕ КАРТИНКИ / ВИДЕО / СТИКЕРЫ
+    # ❌ ЛЮБОЕ МЕДИА
     if message.content_type != "text":
-        ban_user(chat_id, user_id, message, "Медиа / реклама")
+        warn_user(chat_id, message, "Медиа запрещено")
         return
 
     # АНТИФЛУД
@@ -166,28 +147,28 @@ def check_message(message):
     user_messages[chat_id][user_id].append(now)
 
     if len(user_messages[chat_id][user_id]) >= 5:
-        ban_user(chat_id, user_id, message, "Флуд")
+        warn_user(chat_id, message, "Флуд")
         return
 
-    # ❌ ТЕЛЕФОН
+    # ❌ ТЕЛЕФОНЫ
     if PHONE_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, "Контакты")
+        warn_user(chat_id, message, "Контактные данные")
         return
 
     # ❌ ЗАПРЕЩЕННЫЕ СЛОВА
     for word in BAD_WORDS:
         if word in text:
-            ban_user(chat_id, user_id, message, "Реклама")
+            warn_user(chat_id, message, "Запрещённый контент")
             return
 
     # ❌ ССЫЛКИ
     if LINK_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, "Ссылка")
+        warn_user(chat_id, message, "Ссылки запрещены")
         return
 
     # ❌ ЭМОДЗИ
     if EMOJI_PATTERN.search(text):
-        ban_user(chat_id, user_id, message, "Спам эмодзи")
+        warn_user(chat_id, message, "Спам-эмодзи")
         return
 
 # ================== WEBHOOK ==================
