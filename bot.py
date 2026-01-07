@@ -13,14 +13,12 @@ bot = telebot.TeleBot(TOKEN)
 
 # ================== ЗАПРЕЩЕННЫЕ СЛОВА ==================
 BAD_WORDS = [
-    # 🔞 ПОРНО / СЕКС
     "порно","porn","sex","xxx","onlyfans","escort","эскорт",
     "проститутка","проституция","шлюха","девочки","массаж",
     "cam","webcam","cams","nude","nudes","nsfw",
     "hooker","brothel","strip","striptease",
     "интим","интим услуги","sex service","vip girls",
 
-    # 💊 НАРКОТИКИ
     "нарк","drug","drugs","weed","marijuana","cannabis","ganja","hash","hashish","hemp",
     "kush","skunk","dope","420","thc","cbd",
     "cocaine","coke","snow","crack","amphetamine","speed","meth","ice",
@@ -28,25 +26,22 @@ BAD_WORDS = [
     "heroin","opium","morphine","fentanyl","tramadol",
     "lsd","acid","dmt","ketamine","shrooms","psilocybin",
     "spice","k2","noids",
+
     "трава","марихуана","конопля","шишки","бошка","ганжа","гандж",
     "меф","амф","фен","героин","гашиш","анаша","косяк",
 
-    # 💃 ПРОСТИТУЦИЯ / ЭСКОРТ
     "индивидуалка","escort service","эскорт услуги",
 
-    # 💱 ОБМЕННИКИ / КРИПТА
     "обмен","обменник","exchange","crypto exchange",
     "usdt","btc","bitcoin","ethereum",
     "нал","кеш","cash","без верификации","no kyc",
     "быстрый обмен","анонимно",
 
-    # 🎭 МОШЕННИКИ
     "скам","scam","мошенник","мошенники","fraud",
     "развод","обман","кидалово","фейк",
     "гарант","без риска","100%","проверенный",
     "no scam","trusted","verified","fast profit",
 
-    # 💸 БЫСТРЫЕ ДЕНЬГИ
     "быстрые деньги","easy money","лёгкий заработок",
     "заработок без вложений","работа онлайн",
     "удаленно","call center","кол центр",
@@ -56,7 +51,6 @@ BAD_WORDS = [
 
     "$", "₽", "€", "₴", "р", "p",
 
-    # добавленные
     "собрать","предоставлю","темка",
     "забираешь","рублей","выплата"
 ]
@@ -117,10 +111,9 @@ def warn_user(chat_id, message, reason):
 def check_message(message):
     chat_id = message.chat.id
 
-    if message.sender_chat:
+    user_id = message.from_user.id if message.from_user else None
+    if not user_id:
         return
-
-    user_id = message.from_user.id
 
     if is_admin(chat_id, user_id):
         return
@@ -128,12 +121,18 @@ def check_message(message):
     now = time.time()
     text = (message.text or "").lower()
 
-    # ❌ ПЕРЕСЛАННЫЕ СООБЩЕНИЯ
-    if message.forward_from or message.forward_from_chat or message.forward_sender_name:
+    # ❌ ПЕРЕСЛАННЫЕ СООБЩЕНИЯ — ЛЮБОЙ ВИД
+    if (
+        message.forward_from
+        or message.forward_from_chat
+        or message.forward_sender_name
+        or message.forward_date
+        or message.sender_chat
+    ):
         warn_user(chat_id, message, "Пересланные сообщения запрещены")
         return
 
-    # АНТИФЛУД
+    # ================== АНТИФЛУД ==================
     user_messages[chat_id][user_id] = [
         t for t in user_messages[chat_id][user_id] if now - t < 10
     ]
@@ -179,5 +178,3 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-
