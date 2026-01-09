@@ -10,6 +10,7 @@ TOKEN = "8253839434:AAGNEk7YPaehSuRz0FZ3U8_rLn7lg-9i-m4"
 OWNER_ID = 7447763153
 
 bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
 # ================== ЗАПРЕЩЕННЫЕ СЛОВА ==================
 BAD_WORDS = [
@@ -61,8 +62,6 @@ EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNIC
 
 user_messages = defaultdict(lambda: defaultdict(list))
 
-app = Flask(__name__)
-
 # ================== УДАЛЕНИЕ С ЗАДЕРЖКОЙ ==================
 def delete_later(chat_id, message_id, delay=300):
     def worker():
@@ -82,11 +81,11 @@ def is_admin(chat_id, user_id):
         return False
 
 # ================== ПРЕДУПРЕЖДЕНИЕ ==================
-def warn_user(chat_id, message, reason):
+def warn_user(chat_id, message):
     try:
         bot.delete_message(chat_id, message.message_id)
 
-        text = """
+       text = """
 🤖 <b>Хотите разместить объявление без риска блокировки?</b>
 
 ✅ Используйте официальный автоматизированный бот публикации:
@@ -97,77 +96,92 @@ def warn_user(chat_id, message, reason):
 👉 <b>Перейти в бот для размещения:</b>
 @CleanModerChat_bot
 """
-
+)
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
         delete_later(chat_id, sent.message_id, 300)
-
-    except Exception as e:
-        print("Warn error:", e)
+    except:
+        pass
 
 # ================== ПРОВЕРКА СООБЩЕНИЙ ==================
-@bot.message_handler(func=lambda m: True, content_types=[
-    "text", "photo", "video", "animation", "sticker", "document"
-])
+@bot.message_handler(
+    func=lambda m: True,
+    content_types=[
+        "text","photo","video","animation","sticker",
+        "document","voice","video_note","audio"
+    ]
+)
 def check_message(message):
     chat_id = message.chat.id
 
-    user_id = message.from_user.id if message.from_user else None
-    if not user_id:
+    # 🟢 1. ПРОПУСКАЕМ КАНАЛ И АНОНИМНЫХ АДМИНОВ
+    if message.sender_chat:
         return
 
-    if is_admin(chat_id, user_id):
+    # 🟢 2. ПРОПУСКАЕМ АДМИНОВ
+    if message.from_user and is_admin(chat_id, message.from_user.id):
         return
 
-    now = time.time()
-    text = (message.text or "").lower()
-
-    # ❌ ПЕРЕСЛАННЫЕ СООБЩЕНИЯ — ЛЮБОЙ ВИД
+    # ❌ 3. ПЕРЕСЛАННЫЕ СООБЩЕНИЯ
     if (
         message.forward_from
         or message.forward_from_chat
         or message.forward_sender_name
         or message.forward_date
-        or message.sender_chat
     ):
-        warn_user(chat_id, message, "Пересланные сообщения запрещены")
+        warn_user(chat_id, message)
+        return
+
+    # ❌ 4. ЛЮБОЙ МЕДИА-КОНТЕНТ
+    if (
+        message.photo or message.video or message.animation or
+        message.sticker or message.document or message.voice or
+        message.video_note or message.audio
+    ):
+        warn_user(chat_id, message)
         return
 
     # ================== АНТИФЛУД ==================
+    now = time.time()
+    user_id = message.from_user.id
+
     user_messages[chat_id][user_id] = [
         t for t in user_messages[chat_id][user_id] if now - t < 10
     ]
     user_messages[chat_id][user_id].append(now)
 
     if len(user_messages[chat_id][user_id]) >= 5:
-        warn_user(chat_id, message, "Флуд")
+        warn_user(chat_id, message)
         return
+
+    text = (message.text or "").lower()
 
     # ❌ ТЕЛЕФОНЫ
     if PHONE_PATTERN.search(text):
-        warn_user(chat_id, message, "Контактные данные")
+        warn_user(chat_id, message)
+        return
+
+    # ❌ ССЫЛКИ
+    if LINK_PATTERN.search(text):
+        warn_user(chat_id, message)
+        return
+
+    # ❌ ЭМОДЗИ
+    if EMOJI_PATTERN.search(text):
+        warn_user(chat_id, message)
         return
 
     # ❌ ЗАПРЕЩЕННЫЕ СЛОВА
     for word in BAD_WORDS:
         if word in text:
-            warn_user(chat_id, message, "Запрещённый контент")
+            warn_user(chat_id, message)
             return
-
-    # ❌ ССЫЛКИ
-    if LINK_PATTERN.search(text):
-        warn_user(chat_id, message, "Ссылки запрещены")
-        return
-
-    # ❌ ЭМОДЗИ
-    if EMOJI_PATTERN.search(text):
-        warn_user(chat_id, message, "Спам-эмодзи")
-        return
 
 # ================== WEBHOOK ==================
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    json_str = request.get_data().decode("utf-8")
-    update = telebot.types.Update.de_json(json_str)
+    update = telebot.types.Update.de_json(
+        request.get_data().decode("utf-8")
+    )
     bot.process_new_updates([update])
     return "ok"
 
