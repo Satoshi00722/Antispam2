@@ -85,18 +85,19 @@ def warn_user(chat_id, message):
     try:
         bot.delete_message(chat_id, message.message_id)
 
-       text = (
-    "🤖 <b>Хотите разместить объявление без риска блокировки?</b>\n\n"
-    "✅ Используйте официальный автоматизированный бот публикации:\n"
-    "• проверка контента\n"
-    "• безопасная публикация\n"
-    "• без общения с администрацией\n\n"
-    "👉 <b>Перейти в бот для размещения:</b>\n"
-    "@CleanModerChat_bot"
-)
+        text = (
+            "🤖 <b>Хотите разместить объявление без риска блокировки?</b>\n\n"
+            "✅ Используйте официальный бот публикации:\n"
+            "• проверка контента\n"
+            "• безопасная публикация\n"
+            "• без общения с администрацией\n\n"
+            "👉 <b>Перейти в бот:</b>\n"
+            "@CleanModerChat_bot"
+        )
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
         delete_later(chat_id, sent.message_id, 300)
+
     except:
         pass
 
@@ -111,25 +112,25 @@ def warn_user(chat_id, message):
 def check_message(message):
     chat_id = message.chat.id
 
-    # 🟢 1. ПРОПУСКАЕМ КАНАЛ И АНОНИМНЫХ АДМИНОВ
+    # канал / анонимный админ
     if message.sender_chat:
         return
 
-    # 🟢 2. ПРОПУСКАЕМ АДМИНОВ
+    # админ
     if message.from_user and is_admin(chat_id, message.from_user.id):
         return
 
-    # ❌ 3. ПЕРЕСЛАННЫЕ СООБЩЕНИЯ
+    # пересланные
     if (
-        message.forward_from
-        or message.forward_from_chat
-        or message.forward_sender_name
-        or message.forward_date
+        message.forward_from or
+        message.forward_from_chat or
+        message.forward_sender_name or
+        message.forward_date
     ):
         warn_user(chat_id, message)
         return
 
-    # ❌ 4. ЛЮБОЙ МЕДИА-КОНТЕНТ
+    # любой медиа-контент
     if (
         message.photo or message.video or message.animation or
         message.sticker or message.document or message.voice or
@@ -138,7 +139,7 @@ def check_message(message):
         warn_user(chat_id, message)
         return
 
-    # ================== АНТИФЛУД ==================
+    # антифлуд
     now = time.time()
     user_id = message.from_user.id
 
@@ -153,22 +154,18 @@ def check_message(message):
 
     text = (message.text or "").lower()
 
-    # ❌ ТЕЛЕФОНЫ
     if PHONE_PATTERN.search(text):
         warn_user(chat_id, message)
         return
 
-    # ❌ ССЫЛКИ
     if LINK_PATTERN.search(text):
         warn_user(chat_id, message)
         return
 
-    # ❌ ЭМОДЗИ
     if EMOJI_PATTERN.search(text):
         warn_user(chat_id, message)
         return
 
-    # ❌ ЗАПРЕЩЕННЫЕ СЛОВА
     for word in BAD_WORDS:
         if word in text:
             warn_user(chat_id, message)
