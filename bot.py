@@ -92,7 +92,7 @@ def warn_user(chat_id, message):
             "• безопасная публикация\n"
             "• без общения с администрацией\n\n"
             "👉 <b>Перейти в бот:</b>\n"
-            "@CleanModerChat_bot"
+            "@AiDISI_bot"
         )
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
