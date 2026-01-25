@@ -14,46 +14,46 @@ app = Flask(__name__)
 
 # ================== ЗАПРЕЩЕННЫЕ СЛОВА ==================
 BAD_WORDS = [
-    "порно","porn","sex","xxx","onlyfans","escort","эскорт",
-    "проститутка","проституция","шлюха","девочки","массаж",
-    "cam","webcam","cams","nude","nudes","nsfw",
-    "hooker","brothel","strip","striptease",
-    "интим","интим услуги","sex service","vip girls",
+    "порно", "porn", "sex", "xxx", "onlyfans", "escort", "эскорт",
+    "проститутка", "проституция", "шлюха", "девочки", "массаж",
+    "cam", "webcam", "cams", "nude", "nudes", "nsfw",
+    "hooker", "brothel", "strip", "striptease",
+    "интим", "интим услуги", "sex service", "vip girls",
 
-    "нарк","drug","drugs","weed","marijuana","cannabis","ganja","hash","hashish","hemp",
-    "kush","skunk","dope","420","thc","cbd",
-    "cocaine","coke","snow","crack","amphetamine","speed","meth","ice",
-    "mdma","ecstasy","xtc","molly","mephedrone","4-mmc",
-    "heroin","opium","morphine","fentanyl","tramadol",
-    "lsd","acid","dmt","ketamine","shrooms","psilocybin",
-    "spice","k2","noids",
+    "нарк", "drug", "drugs", "weed", "marijuana", "cannabis", "ganja", "hash", "hashish", "hemp",
+    "kush", "skunk", "dope", "420", "thc", "cbd",
+    "cocaine", "coke", "snow", "crack", "amphetamine", "speed", "meth", "ice",
+    "mdma", "ecstasy", "xtc", "molly", "mephedrone", "4-mmc",
+    "heroin", "opium", "morphine", "fentanyl", "tramadol",
+    "lsd", "acid", "dmt", "ketamine", "shrooms", "psilocybin",
+    "spice", "k2", "noids",
 
-    "трава","марихуана","конопля","шишки","бошка","ганжа","гандж",
-    "меф","амф","фен","героин","гашиш","анаша","косяк",
+    "трава", "марихуана", "конопля", "шишки", "бошка", "ганжа", "гандж",
+    "меф", "амф", "фен", "героин", "гашиш", "анаша", "косяк",
 
-    "индивидуалка","escort service","эскорт услуги",
+    "индивидуалка", "escort service", "эскорт услуги",
 
-    "обмен","обменник","exchange","crypto exchange",
-    "usdt","btc","bitcoin","ethereum",
-    "нал","кеш","cash","без верификации","no kyc",
-    "быстрый обмен","анонимно",
+    "обмен", "обменник", "exchange", "crypto exchange",
+    "usdt", "btc", "bitcoin", "ethereum",
+    "нал", "кеш", "cash", "без верификации", "no kyc",
+    "быстрый обмен", "анонимно",
 
-    "скам","scam","мошенник","мошенники","fraud",
-    "развод","обман","кидалово","фейк",
-    "гарант","без риска","100%","проверенный",
-    "no scam","trusted","verified","fast profit",
+    "скам", "scam", "мошенник", "мошенники", "fraud",
+    "развод", "обман", "кидалово", "фейк",
+    "гарант", "без риска", "100%", "проверенный",
+    "no scam", "trusted", "verified", "fast profit",
 
-    "быстрые деньги","easy money","лёгкий заработок",
-    "заработок без вложений","работа онлайн",
-    "удаленно","call center","кол центр",
-    "инвестиции 100%","пассивный доход",
-    "деньги за день","профит","income",
-    "оплата","+420","+380","+7",
+    "быстрые деньги", "easy money", "лёгкий заработок",
+    "заработок без вложений", "работа онлайн",
+    "удаленно", "call center", "кол центр",
+    "инвестиции 100%", "пассивный доход",
+    "деньги за день", "профит", "income",
+    "оплата", "+420", "+380", "+7",
 
     "$", "₽", "€", "₴", "р", "p",
 
-    "собрать","предоставлю","темка",
-    "забираешь","рублей","выплата"
+    "собрать", "предоставлю", "темка",
+    "забираешь", "рублей", "выплата"
 ]
 
 LINK_PATTERN = re.compile(r"http|www|t\.me|bit\.ly", re.IGNORECASE)
@@ -61,6 +61,7 @@ PHONE_PATTERN = re.compile(r"\+?\d[\d\s\-]{7,}")
 EMOJI_PATTERN = re.compile("[💊💉🌿🍑🍆💦🔞🎰💰🤑]", re.UNICODE)
 
 user_messages = defaultdict(lambda: defaultdict(list))
+
 
 # ================== УДАЛЕНИЕ С ЗАДЕРЖКОЙ ==================
 def delete_later(chat_id, message_id, delay=300):
@@ -70,7 +71,9 @@ def delete_later(chat_id, message_id, delay=300):
             bot.delete_message(chat_id, message_id)
         except:
             pass
+
     threading.Thread(target=worker, daemon=True).start()
+
 
 # ================== ПРОВЕРКА АДМИНА ==================
 def is_admin(chat_id, user_id):
@@ -80,8 +83,9 @@ def is_admin(chat_id, user_id):
     except:
         return False
 
+
 # ================== ПРЕДУПРЕЖДЕНИЕ ==================
-    def warn_user(chat_id, message):
+def warn_user(chat_id, message):
     try:
         bot.delete_message(chat_id, message.message_id)
 
@@ -94,22 +98,22 @@ def is_admin(chat_id, user_id):
             "👉 <b>Перейти в бот:</b>\n"
             "@AiDISI_bot\n\n"
             "────────────\n"
-            "<i>#byevsi</i>"
+            "#byevsi"
         )
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
         delete_later(chat_id, sent.message_id, 300)
 
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
 
 # ================== ПРОВЕРКА СООБЩЕНИЙ ==================
 @bot.message_handler(
     func=lambda m: True,
     content_types=[
-        "text","photo","video","animation","sticker",
-        "document","voice","video_note","audio"
+        "text", "photo", "video", "animation", "sticker",
+        "document", "voice", "video_note", "audio"
     ]
 )
 def check_message(message):
@@ -125,19 +129,19 @@ def check_message(message):
 
     # пересланные
     if (
-        message.forward_from or
-        message.forward_from_chat or
-        message.forward_sender_name or
-        message.forward_date
+            message.forward_from or
+            message.forward_from_chat or
+            message.forward_sender_name or
+            message.forward_date
     ):
         warn_user(chat_id, message)
         return
 
     # любой медиа-контент
     if (
-        message.photo or message.video or message.animation or
-        message.sticker or message.document or message.voice or
-        message.video_note or message.audio
+            message.photo or message.video or message.animation or
+            message.sticker or message.document or message.voice or
+            message.video_note or message.audio
     ):
         warn_user(chat_id, message)
         return
@@ -174,6 +178,7 @@ def check_message(message):
             warn_user(chat_id, message)
             return
 
+
 # ================== WEBHOOK ==================
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
@@ -183,9 +188,11 @@ def webhook():
     bot.process_new_updates([update])
     return "ok"
 
+
 @app.route("/")
 def index():
     return "AntiSpam Bot is alive!"
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
