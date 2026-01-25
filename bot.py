@@ -81,7 +81,7 @@ def is_admin(chat_id, user_id):
         return False
 
 # ================== ПРЕДУПРЕЖДЕНИЕ ==================
-def warn_user(chat_id, message):
+    def warn_user(chat_id, message):
     try:
         bot.delete_message(chat_id, message.message_id)
 
@@ -92,8 +92,9 @@ def warn_user(chat_id, message):
             "• безопасная публикация\n"
             "• без общения с администрацией\n\n"
             "👉 <b>Перейти в бот:</b>\n"
-            "@AiDISI_bot"
-            "#ByEvsi|e"
+            "@AiDISI_bot\n\n"
+            "────────────\n"
+            "<i>#byevsi</i>"
         )
 
         sent = bot.send_message(chat_id, text, parse_mode="HTML")
@@ -101,6 +102,7 @@ def warn_user(chat_id, message):
 
     except:
         pass
+
 
 # ================== ПРОВЕРКА СООБЩЕНИЙ ==================
 @bot.message_handler(
